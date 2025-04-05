@@ -123,7 +123,11 @@ def evaluate_specification(user_spec):
         return {"Good": "0%", "Bad": "100%"}
 
 def evaluate_from_file(file_path="llm/good.json"):
-    """Load JSON from file and evaluate it"""
+    """
+    Load JSON from file and evaluate it.
+    Note: This function is only for local development and testing.
+    It should not be used in the Vercel deployment.
+    """
     try:
         with open(file_path, "r") as file:
             user_spec = file.read()
