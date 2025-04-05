@@ -22,9 +22,41 @@ import generateFromERC7730 from "./generateFromERC7730";
 // Sample data
 const POAP_ABI = '[{"inputs":[{"internalType":"address","name":"_poapContractAddress","type":"address"},{"internalType":"address","name":"_validSigner","type":"address"},{"internalType":"address payable","name":"_feeReceiver","type":"address"},{"internalType":"uint256","name":"_migrationFee","type":"uint256"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousFeeReceiver","type":"address"},{"indexed":true,"internalType":"address","name":"newFeeReceiver","type":"address"}],"name":"FeeReceiverChange","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"previousFeeReceiver","type":"uint256"},{"indexed":true,"internalType":"uint256","name":"newFeeReceiver","type":"uint256"}],"name":"MigrationFeeChange","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"account","type":"address"}],"name":"Paused","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"account","type":"address"}],"name":"Unpaused","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousValidSigner","type":"address"},{"indexed":true,"internalType":"address","name":"newValidSigner","type":"address"}],"name":"ValidSignerChange","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"bytes","name":"_signature","type":"bytes"}],"name":"VerifiedSignature","type":"event"},{"inputs":[],"name":"NAME","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"feeReceiver","outputs":[{"internalType":"address payable","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"migrationFee","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"mockEventId","type":"uint256"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"address","name":"receiver","type":"address"},{"internalType":"uint256","name":"expirationTime","type":"uint256"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"mintToken","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"pause","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"paused","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes","name":"","type":"bytes"}],"name":"processed","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"renouncePoapAdmin","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address payable","name":"_feeReceiver","type":"address"}],"name":"setFeeReceiver","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_migrationFee","type":"uint256"}],"name":"setMigrationFee","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_validSigner","type":"address"}],"name":"setValidSigner","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"unpause","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"validSigner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"}]';
 
+// Function to fetch ABI from Sourcify
+const fetchAbiFromSourcify = async (contractAddress: string, chainId: number = 1) => {
+  try {
+    // Try to fetch from full match
+    const fullMatchResponse = await fetch(
+      `https://sourcify.dev/server/files/contracts/full_match/${chainId}/${contractAddress}/metadata.json`
+    );
+    
+    if (fullMatchResponse.ok) {
+      const metadata = await fullMatchResponse.json();
+      return JSON.stringify(metadata.output.abi);
+    }
+    
+    // Try to fetch from partial match if full match fails
+    const partialMatchResponse = await fetch(
+      `https://sourcify.dev/server/files/contracts/partial_match/${chainId}/${contractAddress}/metadata.json`
+    );
+    
+    if (partialMatchResponse.ok) {
+      const metadata = await partialMatchResponse.json();
+      return JSON.stringify(metadata.output.abi);
+    }
+    
+    throw new Error("Contract not found on Sourcify");
+  } catch (error) {
+    console.error("Error fetching from Sourcify:", error);
+    throw new Error("Failed to fetch ABI from Sourcify. Make sure the contract is verified.");
+  }
+};
+
 const CardErc7730 = () => {
   const [input, setInput] = useState("");
   const [inputType, setInputType] = useState<"address" | "abi">("address");
+  const [isLoading, setIsLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const { setErc7730 } = useErc7730Store((state) => state);
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
@@ -42,26 +74,52 @@ const CardErc7730 = () => {
     mutationFn: (input: string) =>
       generateFromERC7730({
         input,
-        inputType,
+        inputType: "abi", // Always use ABI as input type
       }),
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const erc7730 = await fetchERC7730Metadata(input);
+    setFetchError(null);
+    
+    try {
+      let abiToUse = input;
+      
+      // If input type is address, fetch the ABI from Sourcify
+      if (inputType === "address") {
+        setIsLoading(true);
+        try {
+          abiToUse = await fetchAbiFromSourcify(input);
+        } catch (error) {
+          if (error instanceof Error) {
+            setFetchError(error.message);
+          } else {
+            setFetchError("An unknown error occurred");
+          }
+          setIsLoading(false);
+          return;
+        }
+        setIsLoading(false);
+      }
+      
+      const erc7730 = await fetchERC7730Metadata(abiToUse);
 
-    if (erc7730) {
-      console.log(erc7730);
-      useFunctionStore.persist.clearStorage();
+      if (erc7730) {
+        console.log(erc7730);
+        useFunctionStore.persist.clearStorage();
 
-      setErc7730(erc7730);
-      router.push("/metadata");
+        setErc7730(erc7730);
+        router.push("/metadata");
+      }
+    } catch (error) {
+      console.error("Error in submission:", error);
     }
   };
 
   const onTabChange = (value: string) => {
     setInputType(value as "address" | "abi");
     setInput("");
+    setFetchError(null);
   };
   
   const handleSkipToVerification = () => {
@@ -116,6 +174,9 @@ const CardErc7730 = () => {
                   onChange={(e) => setInput(e.target.value)}
                   className="h-12 rounded-lg border-[#1f0f4c] bg-[#0f051d] text-white placeholder:text-gray-500"
                 />
+                <p className="mt-2 text-xs text-blue-400">
+                  The ABI will be fetched from Sourcify using this address
+                </p>
               </div>
             </TabsContent>
 
@@ -135,10 +196,10 @@ const CardErc7730 = () => {
             <div className="mt-6 flex items-center justify-between gap-4">
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || isLoading}
                 className="rounded-full bg-gradient-to-r from-[#FF4D4D] to-[#F9CB28] px-8 py-3 font-medium text-white transition-transform hover:-translate-y-1 hover:shadow-lg disabled:opacity-70"
               >
-                Submit
+                {isLoading ? "Fetching ABI..." : "Submit"}
               </button>
               
               <button
@@ -207,6 +268,12 @@ const CardErc7730 = () => {
           {error instanceof ZodError
             ? JSON.parse(error.message)[0].message
             : error.message}
+        </div>
+      )}
+      
+      {fetchError && (
+        <div className="mt-4 rounded-lg border border-red-500/30 bg-red-900/20 p-4 text-red-400">
+          {fetchError}
         </div>
       )}
     </div>
