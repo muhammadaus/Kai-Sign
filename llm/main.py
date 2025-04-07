@@ -4,7 +4,7 @@ from google import genai
 
 
 # Initialize the Gemini client with your API key
-client = genai.Client(api_key="AIzaSyAxI-7_Pcu1xN_NCCyieQokljbH7NEmy5M")
+client = genai.Client(api_key="AIzaSyABFKNGIcTfenGTcjww65A4aAzQy7sxbqY")
 
 def evaluate_specification(user_spec):
     """
