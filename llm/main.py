@@ -1,10 +1,19 @@
 import json
 import re
 from google import genai
+from dotenv import load_dotenv
+import os
 
+# Load environment variables
+load_dotenv()
+
+# Get API key from environment variable
+API_KEY = os.getenv('GEMINI_API_KEY')
+if not API_KEY:
+    raise ValueError("GEMINI_API_KEY environment variable is not set")
 
 # Initialize the Gemini client with your API key
-client = genai.Client(api_key="AIzaSyABFKNGIcTfenGTcjww65A4aAzQy7sxbqY")
+client = genai.Client(api_key=API_KEY)
 
 def evaluate_specification(user_spec):
     """
