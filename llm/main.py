@@ -1,10 +1,19 @@
 import json
 import re
 from google import genai
+from dotenv import load_dotenv
+import os
 
+# Load environment variables
+load_dotenv()
+
+# Get API key from environment variable
+API_KEY = os.getenv('GEMINI_API_KEY')
+if not API_KEY:
+    raise ValueError("GEMINI_API_KEY environment variable is not set")
 
 # Initialize the Gemini client with your API key
-client = genai.Client(api_key="AIzaSyAxI-7_Pcu1xN_NCCyieQokljbH7NEmy5M")
+client = genai.Client(api_key=API_KEY)
 
 def evaluate_specification(user_spec):
     """
@@ -123,7 +132,11 @@ def evaluate_specification(user_spec):
         return {"Good": "0%", "Bad": "100%"}
 
 def evaluate_from_file(file_path="llm/good.json"):
-    """Load JSON from file and evaluate it"""
+    """
+    Load JSON from file and evaluate it.
+    Note: This function is only for local development and testing.
+    It should not be used in the Vercel deployment.
+    """
     try:
         with open(file_path, "r") as file:
             user_spec = file.read()
