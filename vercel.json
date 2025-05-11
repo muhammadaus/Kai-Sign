@@ -2,14 +2,8 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/**/*.py",
-      "use": "@vercel/python",
-      "config": {
-        "maxLambdaSize": "15mb",
-        "runtime": "python3.12",
-        "memory": 1024,
-        "maxDuration": 10
-      }
+      "src": "api/**/*.go",
+      "use": "@vercel/go"
     },
     {
       "src": "package.json",
@@ -19,15 +13,15 @@
   "routes": [
     {
       "src": "/api/healthcheck",
-      "dest": "/api/healthcheck.py"
+      "dest": "/api/healthcheck.go"
     },
     {
       "src": "/api/py/(.*)",
-      "dest": "/api/index.py"
+      "dest": "/api/index.go"
     },
     {
       "src": "/generateERC7730",
-      "dest": "/api/index.py"
+      "dest": "/api/index.go"
     },
     {
       "src": "/(.*)",
