@@ -71,6 +71,49 @@ To deploy the application to Vercel:
    vercel --prod
    ```
 
+## Alternative Deployment Options
+
+While Vercel works well for Next.js frontends, there are known limitations with Python FastAPI backends in serverless environments. Consider these alternatives if you experience issues:
+
+### 1. Railway.app (Recommended)
+- Simple Git-based deployments
+- Free tier: 500 hours/month
+- Paid plan: Starting at $5/month
+- Setup:
+  ```bash
+  # Install Railway CLI
+  npm i -g @railway/cli
+  
+  # Login and deploy
+  railway login
+  railway init
+  railway up
+  ```
+
+### 2. Render.com
+- Free tier available (with auto-sleep)
+- Standard tier: $7/month
+- Setup: Connect GitHub repository and select Python as environment
+
+### 3. Fly.io
+- Near-free tier with 3 small VMs
+- Starting at ~$2/month for minimal usage
+- Deploy with:
+  ```bash
+  flyctl auth login
+  flyctl launch
+  ```
+
+### 4. PythonAnywhere
+- Specialized for Python applications
+- Free tier available
+- Paid plans from $5/month
+
+### 5. Split Deployment Approach
+- Deploy the frontend to Vercel
+- Deploy the FastAPI backend to one of the options above
+- Update API URLs in your frontend code
+
 ## Important Configuration Files
 
 - `vercel.json`: Configures how Vercel builds and routes the application
@@ -103,12 +146,21 @@ If the API returns "contract source is not available on Etherscan":
 2. Check that you have set the `ETHERSCAN_API_KEY` environment variable correctly
 3. Verify that your API key has permissions to access the contract data
 
+### Vercel Serverless Limitations
+
+If you encounter a JSON parsing error ("Unexpected end of JSON input"):
+1. This is likely due to serverless function timeouts or memory limits
+2. Consider using a dedicated hosting solution from the alternatives above
+3. Check Vercel function logs for timeout errors
+
 ## Post-Deployment Verification
 
 After deploying, run the test script to verify the endpoints:
 
 ```bash
 VERCEL_URL=your-deployment-url.vercel.app node test_deployment.js
+# Or for the Python test script
+python test_api.py https://your-deployment-url.vercel.app
 ```
 
 This will check if all API endpoints are working correctly.

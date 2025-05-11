@@ -24,6 +24,10 @@
       "dest": "/api/index.py"
     },
     {
+      "src": "/generateERC7730",
+      "dest": "/api/index.py"
+    },
+    {
       "src": "/(.*)",
       "dest": "/$1"
     }
@@ -31,5 +35,11 @@
   "env": {
     "PYTHONPATH": ".",
     "PYTHONUNBUFFERED": "1"
+  },
+  "functions": {
+    "api/**/*.py": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
   }
 } 

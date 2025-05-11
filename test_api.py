@@ -1,42 +1,50 @@
 import requests
 import json
+import os
+import sys
 
-def test_api_root():
-    """Test the root API endpoint"""
-    try:
-        response = requests.get('http://localhost:8000/')
-        print(f"Status Code: {response.status_code}")
-        print(f"Response: {response.text}")
-        assert response.status_code == 200
-        print("✅ Root API test passed")
-    except Exception as e:
-        print(f"❌ Root API test failed: {str(e)}")
+# Get base URL from environment or command line
+base_url = os.environ.get('API_URL', 'http://localhost:3000')
+if len(sys.argv) > 1:
+    base_url = sys.argv[1]
 
-def test_api_erc7730_with_address():
-    """Test the ERC7730 API endpoint with a contract address"""
-    try:
-        payload = {
-            "address": "0x2d2f90786a365a2044324f6861697e9EF341F858",
-            "chain_id": 11155111
-        }
-        response = requests.post(
-            'http://localhost:8000/api/py/generateERC7730', 
-            json=payload
-        )
-        print(f"Status Code: {response.status_code}")
-        if response.status_code == 200:
-            # Print first part of response to avoid too much output
-            response_json = response.json()
-            print(f"Response preview: {json.dumps(response_json, indent=2)[:200]}...")
-            print("✅ ERC7730 API test passed")
-        else:
-            print(f"Response: {response.text}")
-            print("❌ ERC7730 API test failed")
-    except Exception as e:
-        print(f"❌ ERC7730 API test failed: {str(e)}")
+print(f"Testing API at: {base_url}")
 
-if __name__ == "__main__":
-    print("Testing API endpoints...")
-    test_api_root()
-    test_api_erc7730_with_address()
-    print("All tests completed.") 
+# Test the healthcheck endpoint
+try:
+    response = requests.get(f"{base_url}/api/healthcheck")
+    print(f"Healthcheck status: {response.status_code}")
+    print(f"Healthcheck response: {response.text}")
+except Exception as e:
+    print(f"Error testing healthcheck: {e}")
+
+# Test generateERC7730 endpoint with a known address
+test_address = "0x6B175474E89094C44Da98b954EedeAC495271d0F"  # DAI token
+test_payload = {
+    "address": test_address,
+    "chain_id": 1
+}
+
+try:
+    print(f"\nTesting generateERC7730 with address: {test_address}")
+    response = requests.post(
+        f"{base_url}/api/py/generateERC7730", 
+        json=test_payload,
+        headers={"Content-Type": "application/json"}
+    )
+    print(f"Status code: {response.status_code}")
+    
+    if response.status_code < 400:
+        try:
+            json_response = response.json()
+            print("Response successfully parsed as JSON")
+            print(f"First 200 chars of response: {json.dumps(json_response)[:200]}...")
+        except json.JSONDecodeError as e:
+            print(f"JSON parse error: {e}")
+            print(f"Raw response: {response.text[:200]}...")
+    else:
+        print(f"Error response: {response.text}")
+except Exception as e:
+    print(f"Error making request: {e}")
+
+print("\nAPI test completed") 

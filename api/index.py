@@ -57,27 +57,38 @@ def run_erc7730(params: Props):
         chain_id = params.chain_id or 1
         
         if (params.abi):
-            result = generate_descriptor(
-                chain_id=chain_id,
-                contract_address='0xdeadbeef00000000000000000000000000000000', # because it's mandatory mock address see with laurent
-                abi=params.abi
-            )
+            try:
+                result = generate_descriptor(
+                    chain_id=chain_id,
+                    contract_address='0xdeadbeef00000000000000000000000000000000', # because it's mandatory mock address see with laurent
+                    abi=params.abi
+                )
+            except Exception as e:
+                error_detail = f"Error with ABI: {str(e)}\n{traceback.format_exc()}"
+                print(error_detail)
+                return JSONResponse(status_code=500, content={"message": str(e)})
        
-        if (params.address):
-            result = generate_descriptor(
-                chain_id=chain_id,
-                contract_address=params.address
-            )
+        if (params.address and not result):
+            try:
+                result = generate_descriptor(
+                    chain_id=chain_id,
+                    contract_address=params.address
+                )
+            except Exception as e:
+                error_detail = f"Error with address: {str(e)}\n{traceback.format_exc()}"
+                print(error_detail) 
+                return JSONResponse(status_code=500, content={"message": str(e)})
             
         if result is None:
-            return JSONResponse(status_code=404, content={"message": "No ABI or address provided"})
+            return JSONResponse(status_code=400, content={"message": "No ABI or address provided"})
         
-        return result
+        # Ensure the response is properly serializable
+        return jsonable_encoder(result)
 
     except Exception as e:
-        print('error', e)
-        error_message = str(e)
-        return JSONResponse(status_code=404, content={"message": error_message})
+        error_detail = f"General error: {str(e)}\n{traceback.format_exc()}"
+        print(error_detail)
+        return JSONResponse(status_code=500, content={"message": str(e)})
 
 # Add a simple test route for health check
 @app.get("/")
