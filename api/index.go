@@ -31,8 +31,10 @@ type ERC7730Descriptor struct {
 	// Add other fields that match your Python model
 }
 
-// Handler is the entry point for the Vercel serverless function
-func Handler(w http.ResponseWriter, r *http.Request) {
+// GenerateHandler is the entry point for the Vercel serverless function
+// Export: /generateERC7730
+// Export: /api/py/generateERC7730
+func GenerateHandler(w http.ResponseWriter, r *http.Request) {
 	// Set CORS headers
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")

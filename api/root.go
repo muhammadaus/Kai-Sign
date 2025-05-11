@@ -5,13 +5,13 @@ import (
 	"net/http"
 )
 
-// TestHandler is a simple test handler for Vercel
-// Export: /api/test
-func TestHandler(w http.ResponseWriter, r *http.Request) {
+// RootHandler is the entry point for the root path
+// Export: /api/go-root
+func RootHandler(w http.ResponseWriter, r *http.Request) {
 	response := map[string]string{
 		"status": "ok",
-		"message": "Go API is running successfully",
-		"version": "1.0.0",
+		"message": "Go API is running",
+		"service": "ERC7730 API",
 	}
 	
 	jsonResponse, _ := json.Marshal(response)

@@ -28,6 +28,10 @@
       "dest": "/api/index.go"
     },
     {
+      "src": "/api/go-root",
+      "dest": "/api/root.go"
+    },
+    {
       "src": "/(.*)",
       "dest": "/$1"
     }

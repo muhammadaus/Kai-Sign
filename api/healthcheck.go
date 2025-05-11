@@ -5,8 +5,9 @@ import (
 	"net/http"
 )
 
-// Handler handles health check requests
-func Handler(w http.ResponseWriter, r *http.Request) {
+// HealthCheckHandler handles health check requests
+// Export: /api/healthcheck
+func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	response := map[string]string{"status": "ok", "message": "API is running"}
 	jsonResponse, _ := json.Marshal(response)
 	
