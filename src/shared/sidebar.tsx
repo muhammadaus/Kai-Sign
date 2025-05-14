@@ -18,6 +18,7 @@ import { ModeToggle } from "~/components/ui/theme-switcher";
 import { useRouter, usePathname } from "next/navigation";
 import useOperationStore from "~/store/useOperationStore";
 import ResetButton from "./resetButton";
+import { Fingerprint } from "lucide-react";
 
 export function AppSidebar() {
   const { getContractAddress } = useErc7730Store((s) => s);
@@ -31,6 +32,7 @@ export function AppSidebar() {
   const isReviewAccessible = validateOperation.length > 0;
 
   const isOperation = pathname === "/operations";
+  const isDigitalSignatures = pathname === "/digital-signatures";
 
   return (
     <Sidebar>
@@ -41,6 +43,20 @@ export function AppSidebar() {
         <h1 className="text-base">Clear sign all the things</h1>
       </SidebarHeader>
       <SidebarContent>
+        <SidebarGroup>
+          <SidebarMenu>
+            <SidebarMenuButton 
+              onClick={() => router.push("/digital-signatures")}
+              isActive={isDigitalSignatures}
+            >
+              <Fingerprint className="h-4 w-4 mr-2" />
+              Digital Signatures
+            </SidebarMenuButton>
+          </SidebarMenu>
+        </SidebarGroup>
+        
+        <SidebarSeparator />
+        
         <SidebarGroup title="Contract">
           <div className="flex flex-col gap-2">
             <h2 className="text-sm font-bold">Contract</h2>

@@ -9,11 +9,10 @@ from erc7730.model.input.descriptor import InputERC7730Descriptor
 import os
 import traceback
 from fastapi.encoders import jsonable_encoder
-
 import json
-
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from api.healthcheck import router as healthcheck_router
 
 # load_dotenv()
 
@@ -26,9 +25,14 @@ def load_env():
     env["XDG_CACHE_HOME"] = '/tmp'
     load_dotenv()
 
-app = FastAPI()
+app = FastAPI(title="ERC7730 API", 
+              description="API for generating ERC7730 descriptors",
+              version="1.0.0")
 
-# Add CORS middleware for Vercel deployment
+# Include the healthcheck router
+app.include_router(healthcheck_router)
+
+# Add CORS middleware for deployment
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -58,11 +62,11 @@ def run_erc7730(params: Props):
         
         if (params.abi):
             try:
-            result = generate_descriptor(
-                chain_id=chain_id,
-                contract_address='0xdeadbeef00000000000000000000000000000000', # because it's mandatory mock address see with laurent
-                abi=params.abi
-            )
+                result = generate_descriptor(
+                    chain_id=chain_id,
+                    contract_address='0xdeadbeef00000000000000000000000000000000', # because it's mandatory mock address see with laurent
+                    abi=params.abi
+                )
             except Exception as e:
                 error_detail = f"Error with ABI: {str(e)}\n{traceback.format_exc()}"
                 print(error_detail)
@@ -70,10 +74,10 @@ def run_erc7730(params: Props):
        
         if (params.address and not result):
             try:
-            result = generate_descriptor(
-                chain_id=chain_id,
-                contract_address=params.address
-            )
+                result = generate_descriptor(
+                    chain_id=chain_id,
+                    contract_address=params.address
+                )
             except Exception as e:
                 error_detail = f"Error with address: {str(e)}\n{traceback.format_exc()}"
                 print(error_detail) 

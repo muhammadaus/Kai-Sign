@@ -1,10 +1,8 @@
-from http.server import BaseHTTPRequestHandler
+from fastapi import APIRouter
 
-def handler(request):
-    return {
-        'statusCode': 200,
-        'body': '{"status": "ok", "message": "API is running"}',
-        'headers': {
-            'Content-Type': 'application/json'
-        }
-    } 
+router = APIRouter()
+
+@router.get("/healthcheck")
+def healthcheck():
+    """Health check endpoint to verify API is running."""
+    return {"status": "ok", "message": "API is running"} 

@@ -1,30 +1,19 @@
-FROM golang:1.24-alpine AS builder
+FROM python:3.12-slim
 
 WORKDIR /app
 
-# Copy go.mod first to leverage Docker caching
-COPY go.mod ./
-RUN go mod download
+# Copy requirements first for better caching
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the source code
-COPY *.go ./
-
-# Build the Go app
-RUN CGO_ENABLED=0 GOOS=linux go build -o main .
-
-# Use a small alpine image for the final image
-FROM alpine:latest
-
-WORKDIR /app
-
-# Copy the binary from the builder stage
-COPY --from=builder /app/main .
+# Copy the application code
+COPY . .
 
 # Expose port
-EXPOSE 3000
+EXPOSE 8000
 
-# Set runtime environment variables
-ENV PORT=3000
+# Set environment variables
+ENV PORT=8000
 
-# Run the Go binary
-CMD ["./main"] 
+# Run the FastAPI application
+CMD ["uvicorn", "api.index:app", "--host", "0.0.0.0", "--port", "${PORT:-8000}"] 
