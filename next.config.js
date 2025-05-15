@@ -16,31 +16,19 @@ const config = {
     return [
       {
         source: "/api/py/:path*",
-        destination:
-          process.env.NODE_ENV === "development"
-            ? "http://127.0.0.1:8000/api/py/:path*"
-            : "/api/py/:path*",
+        destination: "https://kai-sign-production.up.railway.app/api/py/:path*",
       },
       {
         source: "/api/py/generateERC7730",
-        destination:
-          process.env.NODE_ENV === "development"
-            ? "http://127.0.0.1:8000/api/py/generateERC7730"
-            : "/api/py/generateERC7730",
+        destination: "https://kai-sign-production.up.railway.app/api/py/generateERC7730",
       },
       {
         source: "/docs",
-        destination:
-          process.env.NODE_ENV === "development"
-            ? "http://127.0.0.1:8000/api/py/docs"
-            : "/api/py/docs",
+        destination: "https://kai-sign-production.up.railway.app/api/py/docs",
       },
       {
         source: "/openapi.json",
-        destination:
-          process.env.NODE_ENV === "development"
-            ? "http://127.0.0.1:8000/api/py/openapi.json"
-            : "/api/py/openapi.json",
+        destination: "https://kai-sign-production.up.railway.app/api/py/openapi.json",
       },
       {
         source: "/api/trpc/:path*",

@@ -1,7 +1,9 @@
-fastapi==0.115.0
-uvicorn[standard]==0.30.6
-erc7730==0.3.8
-python-dotenv
+fastapi>=0.68.0,<0.69.0
+uvicorn>=0.15.0,<0.16.0
+python-dotenv>=0.19.0,<0.20.0
+pydantic>=1.8.0,<2.0.0
+requests>=2.26.0,<3.0.0
+erc7730>=0.1.0
 google-genai==1.2.0
 mangum==0.17.0
 # python==3.12.0

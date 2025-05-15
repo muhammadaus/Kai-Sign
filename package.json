@@ -15,7 +15,7 @@
     "fastapi-local": "source venv/bin/activate && python -m uvicorn api.index:app --reload",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
     "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
-    "generate": "npx openapi-typescript http://127.0.0.1:8000/api/py/openapi.json --output ./src/generate/api-types.ts",
+    "generate": "npx openapi-typescript http://kai-sign-production.up.railway.app/api/py/openapi.json --output ./src/generate/api-types.ts",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "preview": "next build && next start",
