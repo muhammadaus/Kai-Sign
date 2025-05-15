@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from subprocess import Popen, PIPE
 from dotenv import load_dotenv
 import os
-import uvicorn
 # Import the patched version of generate_descriptor
 from erc7730.generate.generate import generate_descriptor
 from erc7730.model.input.descriptor import InputERC7730Descriptor
@@ -41,12 +40,12 @@ app = FastAPI(
     title="ERC7730 API", 
     description="API for generating ERC7730 descriptors",
     version="1.0.0",
-    docs_url="/api/py/docs",  # Serve docs at /api/py/docs
-    openapi_url="/api/py/openapi.json"  # Serve OpenAPI schema at /api/py/openapi.json
+    docs_url="/docs",
+    openapi_url="/openapi.json"
 )
 
 # Include the healthcheck router
-app.include_router(healthcheck_router, prefix="/api/py")
+app.include_router(healthcheck_router)
 
 # Add CORS middleware for deployment
 app.add_middleware(
@@ -162,7 +161,3 @@ async def run_erc7730(params: Props):
 @app.get("/api/py")
 async def read_root():
     return {"message": "API is running"}
-
-if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
