@@ -89,4 +89,21 @@ The project is configured for Railway.app deployment with:
 1. `railway.toml`: Defines the build and deployment settings
 2. `Procfile`: Specifies the command to run the FastAPI server
 3. `requirements.txt`: Lists all Python dependencies
-4. `Dockerfile`: Provides container configuration (optional, Railway can deploy without it) 
+4. `Dockerfile`: Provides container configuration (optional, Railway can deploy without it)
+5. `start.py`: Helper script that properly handles environment variables and starts the server
+
+## Troubleshooting
+
+If you encounter an error like `Invalid value for '--port': '${PORT:-8000}' is not a valid integer`, make sure that:
+
+1. The `start.py` script is in the root of your project
+2. All command references (in Dockerfile, railway.toml, and Procfile) use `python start.py` instead of direct uvicorn commands with shell variables
+3. Run the verification script to confirm all configurations are correct:
+   ```
+   python verify_deploy.py
+   ```
+
+You can also test your environment with:
+```
+python test_imports.py
+``` 

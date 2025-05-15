@@ -15,5 +15,5 @@ EXPOSE 8000
 # Set environment variables
 ENV PORT=8000
 
-# Run the FastAPI application
-CMD ["uvicorn", "api.index:app", "--host", "0.0.0.0", "--port", "${PORT:-8000}"] 
+# Run the FastAPI application using the start script
+CMD ["python", "start.py"] 
