@@ -2,35 +2,11 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/**/*.go",
-      "use": "@vercel/go"
-    },
-    {
       "src": "package.json",
       "use": "@vercel/next"
     }
   ],
   "routes": [
-    {
-      "src": "/api/test",
-      "dest": "/api/test.go"
-    },
-    {
-      "src": "/api/healthcheck",
-      "dest": "/api/healthcheck.go"
-    },
-    {
-      "src": "/api/py/(.*)",
-      "dest": "/api/index.go"
-    },
-    {
-      "src": "/generateERC7730",
-      "dest": "/api/index.go"
-    },
-    {
-      "src": "/api/go-root",
-      "dest": "/api/root.go"
-    },
     {
       "src": "/(.*)",
       "dest": "/$1"
@@ -39,5 +15,17 @@
   "env": {
     "PYTHONPATH": ".",
     "PYTHONUNBUFFERED": "1"
-  }
+  },
+  "regions": ["sfo1"],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Credentials", "value": "true" },
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET,OPTIONS,PATCH,DELETE,POST,PUT" },
+        { "key": "Access-Control-Allow-Headers", "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version" }
+      ]
+    }
+  ]
 } 

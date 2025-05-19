@@ -13,22 +13,25 @@ const config = {
     ignoreDuringBuilds: true,
   },
   rewrites: async () => {
+    // Use environment variable or fallback to production URL
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://kai-sign-production.up.railway.app";
+    
     return [
       {
         source: "/api/py/:path*",
-        destination: "https://kai-sign-production.up.railway.app/api/py/:path*",
+        destination: `${apiUrl}/api/py/:path*`,
       },
       {
         source: "/api/py/generateERC7730",
-        destination: "https://kai-sign-production.up.railway.app/api/py/generateERC7730",
+        destination: `${apiUrl}/api/py/generateERC7730`,
       },
       {
         source: "/docs",
-        destination: "https://kai-sign-production.up.railway.app/api/py/docs",
+        destination: `${apiUrl}/api/py/docs`,
       },
       {
         source: "/openapi.json",
-        destination: "https://kai-sign-production.up.railway.app/api/py/openapi.json",
+        destination: `${apiUrl}/api/py/openapi.json`,
       },
       {
         source: "/api/trpc/:path*",

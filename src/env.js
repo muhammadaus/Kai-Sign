@@ -19,6 +19,7 @@ export const env = createEnv({
   client: {
     NEXT_PUBLIC_GTM: z.string(),
     NEXT_PUBLIC_ONETRUST: z.string(),
+    NEXT_PUBLIC_API_URL: z.string().optional(),
   },
 
   /**
@@ -30,6 +31,7 @@ export const env = createEnv({
     NEXT_PUBLIC_GTM: process.env.NEXT_PUBLIC_GTM,
     NEXT_PUBLIC_ONETRUST: process.env.NEXT_PUBLIC_ONETRUST,
     CURVEGRID_JWT: process.env.CURVEGRID_JWT,
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
   },
   /**
