@@ -183,16 +183,7 @@ def generate_mock_descriptor(address: str, chain_id: int = 1):
 async def run_erc7730(params: Props):
     """Generate the 'erc7730' based on an ABI."""
     try:
-        # If using mock implementation, return mock data
-        if USE_MOCK:
-            if not params.address and not params.abi:
-                raise HTTPException(status_code=400, detail="No ABI or address provided")
-            address = params.address or "0xdeadbeef00000000000000000000000000000000"
-            chain_id = params.chain_id or 1
-            mock_result = generate_mock_descriptor(address, chain_id)
-            return JSONResponse(content=mock_result)
-
-        # If not using mock, proceed with actual implementation
+        # Proceed with actual implementation
         load_env()
         result = None
 
