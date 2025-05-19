@@ -1,31 +1,48 @@
+#!/usr/bin/env python3
+"""
+Entry point for the Railway/Docker deployment.
+This script starts the FastAPI server after setting up all necessary environment variables.
+"""
 import os
 import sys
 import uvicorn
+from dotenv import load_dotenv
+
+# Load environment variables from .env file if it exists
+load_dotenv()
+
+def main():
+    """Main entry point for the application."""
+    # Set default values for required environment variables
+    if not os.environ.get("USE_MOCK"):
+        # Default to mock mode if no Etherscan API key is available
+        os.environ["USE_MOCK"] = "true" if not os.environ.get("ETHERSCAN_API_KEY") else "false"
+    
+    # Get port from environment variable (Railway sets this)
+    port = int(os.environ.get("PORT", 8000))
+    
+    # Log important information
+    print(f"Starting API server on port {port}")
+    print(f"USE_MOCK: {os.environ.get('USE_MOCK')}")
+    
+    if os.environ.get("ETHERSCAN_API_KEY"):
+        # Don't show the full API key, just that it's set
+        print(f"ETHERSCAN_API_KEY: {os.environ.get('ETHERSCAN_API_KEY')[:4]}...")
+    else:
+        print("ETHERSCAN_API_KEY not set - using mock data")
+    
+    # Check for Python path issues
+    if '.' not in sys.path:
+        sys.path.insert(0, '.')
+        print("Added current directory to Python path")
+    
+    # Start the FastAPI server
+    uvicorn.run(
+        "api.index:app",
+        host="0.0.0.0",
+        port=port,
+        reload=False  # Disable reload in production
+    )
 
 if __name__ == "__main__":
-    try:
-        # Get port from environment variable or use default
-        port_str = os.environ.get("PORT", "8000")
-        
-        # Ensure we have a valid integer port
-        try:
-            port = int(port_str)
-            if port < 1 or port > 65535:
-                print(f"Error: Port {port} is out of valid range (1-65535)")
-                sys.exit(1)
-        except ValueError:
-            print(f"Error: Invalid port '{port_str}' - must be an integer")
-            sys.exit(1)
-        
-        print(f"Starting server on port {port}...")
-        
-        # Run the FastAPI application
-        uvicorn.run(
-            "api.index:app", 
-            host="0.0.0.0", 
-            port=port,
-            log_level="info"
-        )
-    except Exception as e:
-        print(f"Error starting server: {str(e)}")
-        sys.exit(1) 
+    main() 

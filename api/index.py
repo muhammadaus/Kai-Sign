@@ -3,7 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from subprocess import Popen, PIPE
 from dotenv import load_dotenv
 import os
-# Import the patched version of generate_descriptor
+import json
+
+# Import patched version first to apply the monkeypatches
+import api.patched_erc7730
+
+# Now import the regular modules which will have the patches applied
 from erc7730.generate.generate import generate_descriptor
 from erc7730.model.input.descriptor import InputERC7730Descriptor
 from erc7730.model.display import FieldFormat, AddressNameType
@@ -12,7 +17,6 @@ from erc7730.model.input.display import InputDisplay, InputFieldDescription, Inp
 from erc7730.model.input.metadata import InputMetadata
 import traceback
 from fastapi.encoders import jsonable_encoder
-import json
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from api.healthcheck import router as healthcheck_router
@@ -147,30 +151,24 @@ def generate_mock_descriptor(address: str, chain_id: int = 1):
         "display": {
             "formats": {
                 "balanceOf(address)": {
-                    "description": "Get the balance of an account",
+                    "intent": "Get the balance of an account",
                     "fields": [
                         {
-                            "field_description": {
-                                "description": "Account address",
-                                "format": "raw"
-                            }
+                            "label": "Account address",
+                            "format": "raw"
                         }
                     ]
                 },
                 "transfer(address,uint256)": {
-                    "description": "Transfer tokens to a recipient",
+                    "intent": "Transfer tokens to a recipient",
                     "fields": [
                         {
-                            "field_description": {
-                                "description": "Recipient address",
-                                "format": "raw"
-                            }
+                            "label": "Recipient address",
+                            "format": "raw"
                         },
                         {
-                            "field_description": {
-                                "description": "Amount to transfer",
-                                "format": "raw"
-                            }
+                            "label": "Amount to transfer",
+                            "format": "raw"
                         }
                     ]
                 }
@@ -178,8 +176,9 @@ def generate_mock_descriptor(address: str, chain_id: int = 1):
         }
     }
 
-@app.post("/generateERC7730", response_model=None, responses={400: {"model": Message}, 500: {"model": Message}})
-@app.post("/api/py/generateERC7730", response_model=None, responses={400: {"model": Message}, 500: {"model": Message}})
+# Explicitly remove response_model validation to avoid Pydantic validation issues in deployment
+@app.post("/generateERC7730")
+@app.post("/api/py/generateERC7730")
 async def run_erc7730(params: Props):
     """Generate the 'erc7730' based on an ABI."""
     try:
@@ -189,6 +188,11 @@ async def run_erc7730(params: Props):
 
         # we only manage ethereum mainnet
         chain_id = params.chain_id or 1
+        
+        if USE_MOCK:
+            # Use mock data in testing/development
+            address = params.address or "0x0000000000000000000000000000000000000000"
+            return JSONResponse(content=generate_mock_descriptor(address, chain_id))
         
         if (params.abi):
             try:
@@ -218,12 +222,23 @@ async def run_erc7730(params: Props):
             
         if result is None:
             raise HTTPException(status_code=400, detail="No ABI or address provided")
-        
-        # Ensure the response is properly serializable
-        serialized_result = jsonable_encoder(result)
-        
-        # Return the result as-is, without validation through the response model
-        return JSONResponse(content=serialized_result)
+
+        # The result should already be a serializable dict thanks to our patch
+        # But we'll add a fallback just in case
+        try:
+            # If it's already a dict, this should work fine
+            return JSONResponse(content=result)
+        except Exception as e:
+            # If there's still an issue, try more aggressive serialization
+            try:
+                # Try our make_serializable function from the patch
+                from api.patched_erc7730 import make_serializable
+                serialized_result = make_serializable(result)
+                return JSONResponse(content=serialized_result)
+            except Exception as nested_exc:
+                # Last resort, convert to string representation
+                error_msg = f"Failed to serialize: {str(e)}. Nested error: {str(nested_exc)}"
+                raise HTTPException(status_code=500, detail=error_msg)
 
     except HTTPException as e:
         raise e
