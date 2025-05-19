@@ -219,21 +219,20 @@ async def run_erc7730(params: Props):
         if result is None:
             raise HTTPException(status_code=400, detail="No ABI or address provided")
         
-        # Ensure proper field formats and parameters
-        if result.display and result.display.formats:
-            for format_name, format_def in result.display.formats.items():
-                for field in format_def.fields:
-                    if isinstance(field, InputFieldDescription):
-                        # The field itself is the field description
-                        if field.format == 'raw':
-                            field.format = FieldFormat.RAW
-                        elif field.format == 'addressName':
-                            field.format = FieldFormat.ADDRESS_NAME
-                            if field.params and field.params.address_name:
-                                field.params.address_name.types = [AddressNameType(t) for t in field.params.address_name.types]
-
         # Ensure the response is properly serializable
-        return jsonable_encoder(result)
+        serialized_result = jsonable_encoder(result)
+        
+        # For frozen models, we need to modify the serialized JSON rather than the model
+        if serialized_result.get("display") and serialized_result["display"].get("formats"):
+            for format_name, format_def in serialized_result["display"]["formats"].items():
+                if format_def.get("fields"):
+                    for field in format_def["fields"]:
+                        if field.get("format") == "raw":
+                            field["format"] = "raw"  # Already correct format
+                        elif field.get("format") == "addressName":
+                            field["format"] = "addressName"  # Already correct format
+        
+        return serialized_result
 
     except HTTPException as e:
         raise e
