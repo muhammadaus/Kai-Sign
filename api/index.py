@@ -178,8 +178,8 @@ def generate_mock_descriptor(address: str, chain_id: int = 1):
         }
     }
 
-@app.post("/generateERC7730", response_model=InputERC7730Descriptor, responses={400: {"model": Message}, 500: {"model": Message}})
-@app.post("/api/py/generateERC7730", response_model=InputERC7730Descriptor, responses={400: {"model": Message}, 500: {"model": Message}})
+@app.post("/generateERC7730", response_model=None, responses={400: {"model": Message}, 500: {"model": Message}})
+@app.post("/api/py/generateERC7730", response_model=None, responses={400: {"model": Message}, 500: {"model": Message}})
 async def run_erc7730(params: Props):
     """Generate the 'erc7730' based on an ABI."""
     try:
@@ -222,17 +222,8 @@ async def run_erc7730(params: Props):
         # Ensure the response is properly serializable
         serialized_result = jsonable_encoder(result)
         
-        # For frozen models, we need to modify the serialized JSON rather than the model
-        if serialized_result.get("display") and serialized_result["display"].get("formats"):
-            for format_name, format_def in serialized_result["display"]["formats"].items():
-                if format_def.get("fields"):
-                    for field in format_def["fields"]:
-                        if field.get("format") == "raw":
-                            field["format"] = "raw"  # Already correct format
-                        elif field.get("format") == "addressName":
-                            field["format"] = "addressName"  # Already correct format
-        
-        return serialized_result
+        # Return the result as-is, without validation through the response model
+        return JSONResponse(content=serialized_result)
 
     except HTTPException as e:
         raise e
