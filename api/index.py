@@ -21,6 +21,9 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 load_dotenv()
 
+# Define USE_MOCK environment variable - set to False by default
+USE_MOCK = os.getenv("USE_MOCK", "false").lower() == "true"
+
 def load_env():
     etherscan_api_key = os.getenv("ETHERSCAN_API_KEY")
     if not etherscan_api_key:
