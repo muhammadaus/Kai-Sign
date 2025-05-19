@@ -224,12 +224,13 @@ async def run_erc7730(params: Props):
             for format_name, format_def in result.display.formats.items():
                 for field in format_def.fields:
                     if isinstance(field, InputFieldDescription):
-                        if field.field_description.format == 'raw':
-                            field.field_description.format = FieldFormat.RAW
-                        elif field.field_description.format == 'addressName':
-                            field.field_description.format = FieldFormat.ADDRESS_NAME
-                            if field.field_description.params and field.field_description.params.address_name:
-                                field.field_description.params.address_name.types = [AddressNameType(t) for t in field.field_description.params.address_name.types]
+                        # The field itself is the field description
+                        if field.format == 'raw':
+                            field.format = FieldFormat.RAW
+                        elif field.format == 'addressName':
+                            field.format = FieldFormat.ADDRESS_NAME
+                            if field.params and field.params.address_name:
+                                field.params.address_name.types = [AddressNameType(t) for t in field.params.address_name.types]
 
         # Ensure the response is properly serializable
         return jsonable_encoder(result)
