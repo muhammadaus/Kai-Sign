@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -40,6 +40,7 @@ const MetadataForm = () => {
   const hasHydrated = useContext(Erc7730StoreContext)?.persist?.hasHydrated();
   const [isLoading, setIsLoading] = useState(true);
   const [loadingAttempts, setLoadingAttempts] = useState(0);
+  const redirectAttempted = useRef(false);
 
   const { getMetadata, setMetadata, getContractAddress } = useErc7730Store(
     (s) => s,
@@ -56,24 +57,16 @@ const MetadataForm = () => {
     },
   });
 
-  form.watch((value) => {
-    if (hasHydrated === false) return;
-    setMetadata({
-      owner: value.owner,
-      info: {
-        legalName: value.legalName ?? "",
-        url: value.url ?? "",
-      },
-    });
-  });
-
   useEffect(() => {
     let redirectTimer: NodeJS.Timeout;
     
     if (hasHydrated) {
-      if (metadata === null) {
-        // Redirect to home if no metadata even after hydration
-        router.push("/");
+      if (metadata === null && !redirectAttempted.current) {
+        // Only attempt to redirect once
+        redirectAttempted.current = true;
+        redirectTimer = setTimeout(() => {
+          router.push("/");
+        }, 500);
       } else {
         // We have metadata, so we can stop loading
         setIsLoading(false);
@@ -87,7 +80,8 @@ const MetadataForm = () => {
             clearInterval(checkInterval);
             
             // Final check if metadata exists
-            if (getMetadata() === null) {
+            if (getMetadata() === null && !redirectAttempted.current) {
+              redirectAttempted.current = true;
               redirectTimer = setTimeout(() => {
                 router.push("/");
               }, 500);
@@ -104,9 +98,14 @@ const MetadataForm = () => {
         if (redirectTimer) clearTimeout(redirectTimer);
       };
     }
+
+    return () => {
+      if (redirectTimer) clearTimeout(redirectTimer);
+    };
   }, [metadata, router, hasHydrated, getMetadata]);
 
   const onSubmit = (data: MetadataFormType) => {
+    // Only update metadata on explicit form submission
     setMetadata({
       owner: data.owner,
       info: {
