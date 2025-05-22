@@ -32,7 +32,7 @@ export default async function generateERC7730({
       delete pendingRequests[requestKey];
     }
   }
-
+  
   const body: GenerateBody = {
     address: inputType === "address" ? input : undefined,
     abi: inputType === "abi" ? input : undefined,
@@ -52,6 +52,8 @@ export default async function generateERC7730({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            // Add cache control to prevent browser caching issues
+            "Cache-Control": "no-cache",
           },
           body: JSON.stringify(body),
           // Add cache control to prevent browser caching issues
@@ -108,7 +110,7 @@ export default async function generateERC7730({
     // If we've exhausted all retries
     throw new Error("API is currently unavailable. Please try again later.");
   })();
-
+  
   try {
     const result = await pendingRequests[requestKey];
     // Clean up the request from the cache after it completes

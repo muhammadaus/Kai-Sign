@@ -57,12 +57,23 @@ const MetadataForm = () => {
     },
   });
 
+  form.watch((value) => {
+    if (hasHydrated === false) return;
+    setMetadata({
+      owner: value.owner,
+      info: {
+        legalName: value.legalName ?? "",
+        url: value.url ?? "",
+      },
+    });
+  });
+
   useEffect(() => {
     let redirectTimer: NodeJS.Timeout;
     
     if (hasHydrated) {
       if (metadata === null && !redirectAttempted.current) {
-        // Only attempt to redirect once
+        // Redirect to home if no metadata even after hydration
         redirectAttempted.current = true;
         redirectTimer = setTimeout(() => {
           router.push("/");
@@ -105,7 +116,6 @@ const MetadataForm = () => {
   }, [metadata, router, hasHydrated, getMetadata]);
 
   const onSubmit = (data: MetadataFormType) => {
-    // Only update metadata on explicit form submission
     setMetadata({
       owner: data.owner,
       info: {
