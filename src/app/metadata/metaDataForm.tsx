@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,6 +19,7 @@ import { Button } from "~/components/ui/button";
 import Devices from "./devices";
 import { Erc7730StoreContext, useErc7730Store } from "~/store/erc7730Provider";
 import { Card } from "~/components/ui/card";
+import { Loader2 } from "lucide-react";
 
 const metaDataSchema = z.object({
   owner: z.string().min(1, {
@@ -37,6 +38,8 @@ type MetadataFormType = z.infer<typeof metaDataSchema>;
 const MetadataForm = () => {
   const router = useRouter();
   const hasHydrated = useContext(Erc7730StoreContext)?.persist?.hasHydrated();
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingAttempts, setLoadingAttempts] = useState(0);
 
   const { getMetadata, setMetadata, getContractAddress } = useErc7730Store(
     (s) => s,
@@ -65,10 +68,43 @@ const MetadataForm = () => {
   });
 
   useEffect(() => {
-    if (hasHydrated && metadata === null) {
-      router.push("/");
+    let redirectTimer: NodeJS.Timeout;
+    
+    if (hasHydrated) {
+      if (metadata === null) {
+        // Redirect to home if no metadata even after hydration
+        router.push("/");
+      } else {
+        // We have metadata, so we can stop loading
+        setIsLoading(false);
+      }
+    } else {
+      // If not hydrated yet, we set a timer that checks periodically
+      const checkInterval = setInterval(() => {
+        setLoadingAttempts(prev => {
+          // After several attempts (5 seconds), assume it's loaded enough to check
+          if (prev >= 10) {
+            clearInterval(checkInterval);
+            
+            // Final check if metadata exists
+            if (getMetadata() === null) {
+              redirectTimer = setTimeout(() => {
+                router.push("/");
+              }, 500);
+            } else {
+              setIsLoading(false);
+            }
+          }
+          return prev + 1;
+        });
+      }, 500);
+      
+      return () => {
+        clearInterval(checkInterval);
+        if (redirectTimer) clearTimeout(redirectTimer);
+      };
     }
-  }, [metadata, router, hasHydrated, form]);
+  }, [metadata, router, hasHydrated, getMetadata]);
 
   const onSubmit = (data: MetadataFormType) => {
     setMetadata({
@@ -81,8 +117,16 @@ const MetadataForm = () => {
     router.push("/operations");
   };
 
-  if (hasHydrated !== true) {
-    return <div>Loading...</div>;
+  if (isLoading) {
+    return (
+      <div className="flex h-[60vh] w-full flex-col items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-purple-500" />
+        <p className="mt-4 text-lg">Initializing metadata...</p>
+        <p className="mt-2 text-sm text-gray-500">
+          Please wait while we connect to the API
+        </p>
+      </div>
+    );
   }
 
   return (

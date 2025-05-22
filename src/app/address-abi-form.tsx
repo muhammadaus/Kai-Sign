@@ -9,7 +9,7 @@ import { Textarea } from "~/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import SampleAddressAbiCard from "./sampleAddressAbiCard";
 import { Button } from "~/components/ui/button";
-import { FileJson } from "lucide-react";
+import { FileJson, Loader2 } from "lucide-react";
 import Image from "next/image";
 
 import { ZodError } from "zod";
@@ -22,16 +22,53 @@ import generateFromERC7730 from "./generateFromERC7730";
 // Sample data
 const POAP_ABI = '[{"inputs":[{"internalType":"address","name":"_poapContractAddress","type":"address"},{"internalType":"address","name":"_validSigner","type":"address"},{"internalType":"address payable","name":"_feeReceiver","type":"address"},{"internalType":"uint256","name":"_migrationFee","type":"uint256"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousFeeReceiver","type":"address"},{"indexed":true,"internalType":"address","name":"newFeeReceiver","type":"address"}],"name":"FeeReceiverChange","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"previousFeeReceiver","type":"uint256"},{"indexed":true,"internalType":"uint256","name":"newFeeReceiver","type":"uint256"}],"name":"MigrationFeeChange","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"account","type":"address"}],"name":"Paused","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"account","type":"address"}],"name":"Unpaused","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousValidSigner","type":"address"},{"indexed":true,"internalType":"address","name":"newValidSigner","type":"address"}],"name":"ValidSignerChange","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"bytes","name":"_signature","type":"bytes"}],"name":"VerifiedSignature","type":"event"},{"inputs":[],"name":"NAME","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"feeReceiver","outputs":[{"internalType":"address payable","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"migrationFee","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"mockEventId","type":"uint256"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"address","name":"receiver","type":"address"},{"internalType":"uint256","name":"expirationTime","type":"uint256"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"mintToken","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"pause","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"paused","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes","name":"","type":"bytes"}],"name":"processed","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"renouncePoapAdmin","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address payable","name":"_feeReceiver","type":"address"}],"name":"setFeeReceiver","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_migrationFee","type":"uint256"}],"name":"setMigrationFee","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_validSigner","type":"address"}],"name":"setValidSigner","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"unpause","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"validSigner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"}]';
 
+// Sleep utility function for delay between retries
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Check if the API is ready
+const checkApiHealth = async (): Promise<boolean> => {
+  try {
+    const response = await fetch("/api/py");
+    return response.ok;
+  } catch (error) {
+    return false;
+  }
+};
+
 const CardErc7730 = () => {
   const [input, setInput] = useState("");
   const [inputType, setInputType] = useState<"address" | "abi">("address");
   const { setErc7730 } = useErc7730Store((state) => state);
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const [apiReady, setApiReady] = useState<boolean | null>(null);
+  const [checkingApi, setCheckingApi] = useState(false);
 
   // Prevent hydration mismatch
   useEffect(() => {
     setMounted(true);
+
+    // Check API health on mount
+    const checkApi = async () => {
+      setCheckingApi(true);
+      let isReady = await checkApiHealth();
+      
+      // If not ready, retry a few times with increasing delay
+      if (!isReady) {
+        let retryDelay = 1000;
+        for (let i = 0; i < 3; i++) {
+          await sleep(retryDelay);
+          isReady = await checkApiHealth();
+          if (isReady) break;
+          retryDelay *= 2;
+        }
+      }
+      
+      setApiReady(isReady);
+      setCheckingApi(false);
+    };
+    
+    checkApi();
   }, []);
 
   const {
@@ -48,6 +85,21 @@ const CardErc7730 = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check API health before submitting
+    if (apiReady === false) {
+      // Re-check API health
+      setCheckingApi(true);
+      const isReady = await checkApiHealth();
+      setApiReady(isReady);
+      setCheckingApi(false);
+      
+      if (!isReady) {
+        // Show error message
+        return;
+      }
+    }
+    
     const erc7730 = await fetchERC7730Metadata(input);
 
     if (erc7730) {
@@ -135,10 +187,11 @@ const CardErc7730 = () => {
             <div className="mt-6 flex items-center justify-between gap-4">
               <button
                 type="submit"
-                disabled={loading}
-                className="rounded-full bg-gradient-to-r from-[#FF4D4D] to-[#F9CB28] px-8 py-3 font-medium text-white transition-transform hover:-translate-y-1 hover:shadow-lg disabled:opacity-70"
+                disabled={loading || checkingApi || apiReady === false}
+                className="rounded-full bg-gradient-to-r from-[#FF4D4D] to-[#F9CB28] px-8 py-3 font-medium text-white transition-transform hover:-translate-y-1 hover:shadow-lg disabled:opacity-70 flex items-center gap-2"
               >
-                Submit
+                {(loading || checkingApi) && <Loader2 className="h-4 w-4 animate-spin" />}
+                {checkingApi ? "Checking API..." : "Submit"}
               </button>
               
               <button
@@ -153,6 +206,20 @@ const CardErc7730 = () => {
           </Tabs>
         </form>
       </div>
+
+      {apiReady === false && (
+        <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-900/20 p-4 text-amber-400">
+          The API server is currently starting up. Please wait a moment before submitting.
+        </div>
+      )}
+
+      {error && (
+        <div className="mt-4 rounded-lg border border-red-500/30 bg-red-900/20 p-4 text-red-400">
+          {error instanceof ZodError
+            ? JSON.parse(error.message)[0].message
+            : error.message}
+        </div>
+      )}
 
       <div className="mt-6">
         <div className="rounded-xl border border-[#664bda]/50 bg-[#140a33]/50 p-6 backdrop-blur-sm">
@@ -201,14 +268,6 @@ const CardErc7730 = () => {
           </div>
         </div>
       </div>
-
-      {error && (
-        <div className="mt-4 rounded-lg border border-red-500/30 bg-red-900/20 p-4 text-red-400">
-          {error instanceof ZodError
-            ? JSON.parse(error.message)[0].message
-            : error.message}
-        </div>
-      )}
     </div>
   );
 };
