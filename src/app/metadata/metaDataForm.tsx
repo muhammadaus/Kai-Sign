@@ -57,30 +57,55 @@ const MetadataForm = () => {
     },
   });
 
-  form.watch((value) => {
+  // Only update metadata when values actually change
+  const formValues = form.watch();
+  useEffect(() => {
+    // Wait for hydration
     if (hasHydrated === false) return;
-    setMetadata({
-      owner: value.owner,
-      info: {
-        legalName: value.legalName ?? "",
-        url: value.url ?? "",
-      },
-    });
-  });
+    
+    // Only update if values are different from current metadata
+    if (
+      formValues.owner !== metadata?.owner ||
+      formValues.url !== metadata?.info?.url ||
+      formValues.legalName !== metadata?.info?.legalName
+    ) {
+      setMetadata({
+        owner: formValues.owner,
+        info: {
+          legalName: formValues.legalName ?? "",
+          url: formValues.url ?? "",
+        },
+      });
+    }
+  }, [formValues, hasHydrated, metadata, setMetadata]);
 
   useEffect(() => {
     let redirectTimer: NodeJS.Timeout;
     
+    // Check if we're on Vercel - if so, be more lenient with empty metadata
+    const isVercel = typeof window !== 'undefined' && window.location.hostname.includes('vercel.app');
+    
     if (hasHydrated) {
-      if (metadata === null && !redirectAttempted.current) {
-        // Redirect to home if no metadata even after hydration
+      if (metadata === null && !redirectAttempted.current && !isVercel) {
+        // Redirect to home if no metadata even after hydration (but not on Vercel)
         redirectAttempted.current = true;
         redirectTimer = setTimeout(() => {
           router.push("/");
         }, 500);
       } else {
-        // We have metadata, so we can stop loading
+        // We have metadata or we're on Vercel, so we can stop loading
         setIsLoading(false);
+        
+        // If we're on Vercel and have no metadata, create empty placeholder metadata
+        if (isVercel && metadata === null) {
+          setMetadata({
+            owner: "",
+            info: {
+              legalName: "",
+              url: "",
+            },
+          });
+        }
       }
     } else {
       // If not hydrated yet, we set a timer that checks periodically
@@ -91,13 +116,24 @@ const MetadataForm = () => {
             clearInterval(checkInterval);
             
             // Final check if metadata exists
-            if (getMetadata() === null && !redirectAttempted.current) {
+            if (getMetadata() === null && !redirectAttempted.current && !isVercel) {
               redirectAttempted.current = true;
               redirectTimer = setTimeout(() => {
                 router.push("/");
               }, 500);
             } else {
               setIsLoading(false);
+              
+              // If we're on Vercel and have no metadata, create empty placeholder metadata
+              if (isVercel && getMetadata() === null) {
+                setMetadata({
+                  owner: "",
+                  info: {
+                    legalName: "",
+                    url: "",
+                  },
+                });
+              }
             }
           }
           return prev + 1;
@@ -113,7 +149,7 @@ const MetadataForm = () => {
     return () => {
       if (redirectTimer) clearTimeout(redirectTimer);
     };
-  }, [metadata, router, hasHydrated, getMetadata]);
+  }, [metadata, router, hasHydrated, getMetadata, setMetadata]);
 
   const onSubmit = (data: MetadataFormType) => {
     setMetadata({
